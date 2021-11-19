@@ -1,0 +1,40 @@
+{
+  "name": "node_js_ipqs_db_reader",
+  "version": "1.0.0",
+  "description": "A Node JS implementation of the IPQualityScore flat file IP reputation database reader.",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "lib/**/*"
+  ],
+  "scripts": {
+    "test": "jest --config jestconfig.json",
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/IPQualityScore/NodeJSIPQSDBReader.git"
+  },
+  "keywords": [
+    "ip",
+    "reputation",
+    "flat",
+    "file",
+    "database",
+    "IP",
+    "Address",
+    "IPQualityScore"
+  ],
+  "author": "IPQualityScore LLC <support@ipqualityscore.com> (https://www.ipqualityscore.com/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/IPQualityScore/NodeJSIPQSDBReader/issues"
+  },
+  "homepage": "https://github.com/IPQualityScore/NodeJSIPQSDBReader#readme",
+  "devDependencies": {
+    "@types/jest": "^27.0.2",
+    "jest": "^27.3.1",
+    "ts-jest": "^27.0.7",
+    "typescript": "^4.4.4"
+  }
+}
