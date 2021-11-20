@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "test": "jest --config jestconfig.json",
+    "version" : "git add -A src",
+    "postversion" : "git push && git push --tags",
     "build": "tsc"
   },
   "repository": {
@@ -30,7 +32,7 @@
   "bugs": {
     "url": "https://github.com/IPQualityScore/NodeJSIPQSDBReader/issues"
   },
-  "homepage": "https://github.com/IPQualityScore/NodeJSIPQSDBReader#readme",
+  "homepage": "https://www.ipqualityscore.com",
   "devDependencies": {
     "@types/jest": "^27.0.2",
     "jest": "^27.3.1",

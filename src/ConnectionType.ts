@@ -29,4 +29,21 @@ export default class ConnectionType {
             return;
         }
     }
+
+    public toString(): string {
+        switch(this.raw){
+            case 1:
+                return "Residential";
+            case 2:
+                return "Mobile";
+            case 3:
+                return "Corporate";
+            case 4:
+                return "Data Center";
+            case 5:
+                return "Education";
+            default:
+                return "Unknown";
+        }
+    }
 }

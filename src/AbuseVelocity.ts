@@ -18,4 +18,17 @@ export default class AbuseVelocity {
             this.raw = 2;
         }
     }
+
+    public toString(): string {
+        switch(this.raw) {
+            case 1:
+                return "low";
+            case 2:
+                return "medium";
+            case 3:
+                return "high";
+            default:
+                return "none";
+        }
+    }
 }
