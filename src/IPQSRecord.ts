@@ -150,8 +150,8 @@ export default class IPQSRecord {
         if(this.file.binaryData.has(Binary.BinaryData)){
             this.processFirstByte((new Binary.Bitmask(raw[0])));
             this.processSecondByte((new Binary.Bitmask(raw[1])));
-
-            let third = new Binary.Bitmask(raw[3]);
+            
+            let third = new Binary.Bitmask(raw[2]);
             this.connectionType = new ConnectionType(third);
             this.abuseVelocity = new AbuseVelocity(third);
 
@@ -241,22 +241,29 @@ export default class IPQSRecord {
                         value = vb.toString();
                         current_byte += 4;
                     }
+                    break;
             }
 
             this.columns.push((new Column(c.name, c.type, value)));
             switch(c.name){
                 case "Country":
                     this.country = value;
+                    break;
                 case "City":
                     this.city = value;
+                    break;
                 case "Region":
                     this.region = value;
+                    break;
                 case "ISP":
                     this.ISP = value;
+                    break;
                 case "Organization":
                     this.organization = value;
+                    break;
                 case "Timezone":
                     this.timezone = value;
+                    break;
             }
         }
 
