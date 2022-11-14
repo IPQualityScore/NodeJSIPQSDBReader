@@ -1,6 +1,6 @@
 {
   "name": "node_js_ipqs_db_reader",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "A Node JS implementation of the IPQualityScore flat file IP reputation database reader.",
   "main": "index.js",
   "types": "index.d.ts",
