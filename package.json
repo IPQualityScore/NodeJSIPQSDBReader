@@ -9,8 +9,8 @@
   ],
   "scripts": {
     "test": "jest --config jestconfig.json",
-    "version" : "git add -A src",
-    "postversion" : "git push && git push --tags",
+    "version": "git add -A src",
+    "postversion": "git push && git push --tags",
     "build": "tsc"
   },
   "repository": {
