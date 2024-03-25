@@ -1,6 +1,7 @@
 import * as Binary from "./BinaryOption";
 import IPQSRecord from "./IPQSRecord";
 import Column from "./Column";
+import Address4 from 'ip-address';
 
 export default class FileReader {
     public fileHandler?: number;
@@ -51,6 +52,15 @@ export default class FileReader {
             record.recordError = new Error("Attemtped to look up IPv4 using IPv6 database file. Aborting.");
         } else if(this.IPv6 === false && ip.includes(":") === true){
             record.recordError = new Error("Attemtped to look up IPv6 using IPv4 database file. Aborting.");
+        }
+
+        if(this.IPv6 === false) {
+            const subnet = new Address4('0.0.0.0/8');
+            const incomingIP = new Address4(ip);
+
+            if (subnet.contains(incomingIP)) {
+                record.recordError = new Error("Attempted to look up ip in 0.0.0.0/8 range. Aborting.");
+            }
         }
 
         if(record.recordError === null){
