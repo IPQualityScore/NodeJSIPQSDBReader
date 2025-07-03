@@ -1,108 +1,144 @@
-import * as fs from 'fs';
-import * as Binary from './BinaryOption';
-import Column from './Column';
+import { open } from "node:fs/promises";
+import * as Binary from "./BinaryOption";
+import Column from "./Column";
 
-import FileReader from './FileReader';
-import Utility from './Utility';
+import FileReader from "./FileReader";
+import Utility from "./Utility";
 
 export default class DBReader {
-	public static readonly IPQS_READER_VERSION = 1;
-	public static readonly HEADER_PREFIX_BYTES = 11;
-	public static Open(filename: string): FileReader {
-		let file = new FileReader();
-		
-		fs.open(filename, 'r', (status, fd) => {
-			file.fileHandler = fd;
-			file.fileError = status;
+  public static readonly IPQS_READER_VERSION = 1;
+  public static readonly HEADER_PREFIX_BYTES = 11;
 
-			if(file.fileError !== null){
-				return file.setup();
-			}
-			
-			// Read headers.
-			var buffer = Buffer.alloc(this.HEADER_PREFIX_BYTES);
-			fs.read(fd, buffer, 0, 11, 0, (err, num) => {
-				file.binaryData = new Binary.Bitmask(buffer[0]);
-				if(file.binaryData.has(Binary.IPv4Map)){
-					file.valid = true;
-					file.IPv6 = false;
-				}
+  public static async Open(filename: string): Promise<FileReader> {
+    const file = new FileReader(); // Create the FileReader instance
 
-				if(file.binaryData.has(Binary.IPv6Map)){
-					file.valid = true;
-					file.IPv6 = true;
-				}
+    try {
+      const handle = await open(filename, "r");
+      file.fileHandler = handle;
 
-				if(file.binaryData.has(Binary.IsBlacklistFile)){
-					file.blacklistFile = true;
-				}
+      const headerBuffer = Buffer.alloc(this.HEADER_PREFIX_BYTES);
+      const { bytesRead: headerBytesRead } = await handle.read(
+        headerBuffer,
+        0, // offset in the buffer to start reading
+        this.HEADER_PREFIX_BYTES, // number of bytes to read
+        0 // position in the file to start reading from
+      );
 
-				if(file.valid === false){
-					return file.setup("Invalid file format, invalid first byte, EID 1.");
-				}
+      if (headerBytesRead !== this.HEADER_PREFIX_BYTES) {
+        throw new Error("Failed to read complete header.");
+      }
 
-				if(buffer[1] !== this.IPQS_READER_VERSION){
-					return file.setup("Invalid file version, EID 1.");
-				}
+      file.binaryData = new Binary.Bitmask(headerBuffer[0]);
+      if (file.binaryData.has(Binary.IPv4Map)) {
+        file.valid = true;
+        file.IPv6 = false;
+      }
 
-				file.treeStart = Utility.uVarInt([buffer[2], buffer[3], buffer[4]]);
-				if(file.treeStart === 0){
-					return file.setup("Invalid file format, invalid header bytes, EID 2.");
-				}
+      if (file.binaryData.has(Binary.IPv6Map)) {
+        file.valid = true;
+        file.IPv6 = true;
+      }
 
-				file.recordBytes = Utility.uVarInt([buffer[5], buffer[6]]);
-				if(file.recordBytes === 0){
-					return file.setup("Invalid file format, invalid record bytes, EID 3.");
-				}
+      if (file.binaryData.has(Binary.IsBlacklistFile)) {
+        file.blacklistFile = true;
+      }
 
-				file.totalBytes = buffer.readInt32LE(7);
-				if(file.totalBytes === 0){
-					return file.setup("Invalid file format, EID 4.");
-				}
+      if (file.valid === false) {
+        throw new Error("Invalid file format, invalid first byte, EID 1.");
+      }
 
-				let column_bytes = file.treeStart - this.HEADER_PREFIX_BYTES;
-				let columns = Buffer.alloc(column_bytes);
-				fs.read(fd, columns, 0, column_bytes, this.HEADER_PREFIX_BYTES, (err, num) => {
-					if(err !== null){
-						file.fileError = err;
-						return file.setup();
-					}
+      if (headerBuffer[1] !== this.IPQS_READER_VERSION) {
+        throw new Error("Invalid file version, EID 1.");
+      }
 
-					for(let i = 0;i < (columns.length / 24); i++){
-						file.columns[i] = new Column(
-							columns.toString('ascii', (i * 24), ((i + 1) * 24) - 1).split('\x00',1)[0],
-							new Binary.Bitmask(columns.readUInt8(((i + 1) * 24) - 1))
-						);
-					}
-					
-					if(file.columns.length === 0){
-						return file.setup("File does not appear to be valid, no column data found. EID: 5")
-					}
+      file.treeStart = Utility.uVarInt([
+        headerBuffer[2],
+        headerBuffer[3],
+        headerBuffer[4],
+      ]);
+      if (file.treeStart === 0) {
+        throw new Error("Invalid file format, invalid header bytes, EID 2.");
+      }
 
-					let treeheader = Buffer.alloc(FileReader.TREE_PREFIX_BYTES);
-					fs.read(fd, treeheader, 0, FileReader.TREE_PREFIX_BYTES, file.treeStart, (err, num) => {
-						if(err !== null){
-							file.fileError = err;
-							return file.setup();
-						}
-						
-						let treetype = new Binary.Bitmask(treeheader[0]);
-						if(!treetype.has(Binary.TreeData)){
-							return file.setup("File does not appear to be valid, bad binary tree. EID: 6");
-						}
+      file.recordBytes = Utility.uVarInt([headerBuffer[5], headerBuffer[6]]);
+      if (file.recordBytes === 0) {
+        throw new Error("Invalid file format, invalid record bytes, EID 3.");
+      }
 
-						let totaltree = treeheader.readUInt32LE(1);
-						if(totaltree === 0){
-							return file.setup("File does not appear to be valid, tree size is too small. EID: 7");
-						}
+      file.totalBytes = headerBuffer.readInt32LE(7);
+      if (file.totalBytes === 0) {
+        throw new Error("Invalid file format, EID 4.");
+      }
 
-						file.treeEnd = file.treeStart + totaltree;
-						file.setup();
-					});
-				});
-			});
-		});
-		
-		return file;
-	}
+      const column_bytes = file.treeStart - this.HEADER_PREFIX_BYTES;
+      const columnsBuffer = Buffer.alloc(column_bytes);
+
+      // Read column data
+      const { bytesRead: columnBytesRead } = await handle.read(
+        columnsBuffer,
+        0, // offset in the buffer to start writing
+        column_bytes, // number of bytes to read
+        this.HEADER_PREFIX_BYTES // position in the file to start reading from
+      );
+
+      if (columnBytesRead !== column_bytes) {
+        throw new Error("Failed to read complete column data.");
+      }
+
+      for (let i = 0; i < columnsBuffer.length / 24; i++) {
+        file.columns[i] = new Column(
+          columnsBuffer
+            .toString("ascii", i * 24, (i + 1) * 24 - 1)
+            .split("\x00", 1)[0],
+          new Binary.Bitmask(columnsBuffer.readUInt8((i + 1) * 24 - 1))
+        );
+      }
+
+      if (file.columns.length === 0) {
+        throw new Error(
+          "File does not appear to be valid, no column data found. EID: 5"
+        );
+      }
+
+      const treeheaderBuffer = Buffer.alloc(FileReader.TREE_PREFIX_BYTES);
+
+      // Read tree header
+      const { bytesRead: treeHeaderBytesRead } = await handle.read(
+        treeheaderBuffer,
+        0, // offset in the buffer to start writing
+        FileReader.TREE_PREFIX_BYTES, // number of bytes to read
+        file.treeStart // position in the file to start reading from
+      );
+
+      if (treeHeaderBytesRead !== FileReader.TREE_PREFIX_BYTES) {
+        throw new Error("Failed to read complete tree header.");
+      }
+
+      const treetype = new Binary.Bitmask(treeheaderBuffer[0]);
+      if (!treetype.has(Binary.TreeData)) {
+        throw new Error(
+          "File does not appear to be valid, bad binary tree. EID: 6"
+        );
+      }
+
+      const totaltree = treeheaderBuffer.readUInt32LE(1);
+      if (totaltree === 0) {
+        throw new Error(
+          "File does not appear to be valid, tree size is too small. EID: 7"
+        );
+      }
+
+      file.treeEnd = file.treeStart + totaltree;
+
+      return file;
+    } catch (err: unknown) {
+      // Ensure the file handle is closed if an error occurs during setup
+      if (file.fileHandler) {
+        await file.fileHandler.close();
+      }
+
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      throw new Error(`Failed to open/setup file: ${errorMessage}`); // Re-throw for external handling
+    }
+  }
 }

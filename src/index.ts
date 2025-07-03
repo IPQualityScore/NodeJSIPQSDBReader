@@ -1,3 +1,3 @@
-import DBReader from './DBReader';
+import DBReader from "./DBReader";
 
 export { DBReader };
