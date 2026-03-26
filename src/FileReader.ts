@@ -10,6 +10,7 @@ export default class FileReader {
   public binaryData?: Binary.Bitmask;
   public blacklistFile: boolean = false;
   public valid: boolean = false;
+  public version: number = 0x00;
   public IPv6: boolean = false;
 
   public treeEnd: number = 0;
@@ -49,11 +50,11 @@ export default class FileReader {
     let record = new IPQSRecord(this);
     if (this.IPv6 === true && ip.includes(".") === true) {
       throw new Error(
-        "Attemtped to look up IPv4 using IPv6 database file. Aborting."
+        "Attemtped to look up IPv4 using IPv6 database file. Aborting.",
       );
     } else if (this.IPv6 === false && ip.includes(":") === true) {
       throw new Error(
-        "Attemtped to look up IPv6 using IPv4 database file. Aborting."
+        "Attemtped to look up IPv6 using IPv4 database file. Aborting.",
       );
     }
 

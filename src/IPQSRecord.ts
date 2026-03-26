@@ -38,7 +38,6 @@ export default class IPQSRecord {
 
   public columns: Column[] = [];
 
-  public static readonly TREE_BYTES = 8;
   public valid: boolean = false;
   public file: FileReader;
 
@@ -54,7 +53,8 @@ export default class IPQSRecord {
   public async fetch(ip: string) {
     this.position = 0;
     this.previous = {};
-    this.file_position = this.file.treeStart + FileReader.TREE_PREFIX_BYTES;
+    this.file_position =
+      this.file.treeStart + (this.file.version === 0x01 ? 5 : 9);
     this.literal = this.convertIPToLitteral(this.file.IPv6, ip);
     return await this.populateRecord(0);
   }
@@ -62,7 +62,7 @@ export default class IPQSRecord {
   private async populateRecord(iterations: number): Promise<any> {
     if (iterations > 256) {
       throw new Error(
-        "Invalid or nonexistent IP address specified for lookup. (EID: 15)"
+        "Invalid or nonexistent IP address specified for lookup. (EID: 15)",
       );
     }
 
@@ -73,23 +73,29 @@ export default class IPQSRecord {
     this.previous[this.position] = this.file_position;
     if (this.literal.length <= this.position) {
       throw new Error(
-        "Invalid or nonexistent IP address specified for lookup. (EID: 8)"
+        "Invalid or nonexistent IP address specified for lookup. (EID: 8)",
       );
     }
 
     try {
-      let read = Buffer.alloc(IPQSRecord.TREE_BYTES);
+      let read = Buffer.alloc(this.file.version === 0x01 ? 8 : 16);
       await this.file.fileHandler.read(
         read,
         0, // offset in the buffer to start reading
-        IPQSRecord.TREE_BYTES, // number of bytes to read
-        this.file_position // position in the file to start reading from
+        this.file.version === 0x01 ? 8 : 16, // number of bytes to read
+        this.file_position, // position in the file to start reading from
       );
 
       if (this.literal[this.position] === "0") {
-        this.file_position = read.readUInt32LE(0);
+        this.file_position =
+          this.file.version === 0x01
+            ? read.readUInt32LE(0)
+            : Number(read.readBigUInt64LE(0));
       } else {
-        this.file_position = read.readUInt32LE(4);
+        this.file_position =
+          this.file.version === 0x01
+            ? read.readUInt32LE(4)
+            : Number(read.readBigUInt64LE(8));
       }
 
       if (this.file.blacklistFile === false) {
@@ -117,7 +123,7 @@ export default class IPQSRecord {
       if (this.file_position < this.file.treeEnd) {
         if (this.file_position === 0) {
           throw new Error(
-            "Invalid or nonexistent IP address specified for lookup. (EID: 12)"
+            "Invalid or nonexistent IP address specified for lookup. (EID: 12)",
           );
         }
 
@@ -134,7 +140,7 @@ export default class IPQSRecord {
         raw,
         0, // offset in the buffer to start reading
         this.file.recordBytes, // number of bytes to read
-        this.file_position // position in the file to start reading from
+        this.file_position, // position in the file to start reading from
       );
 
       if (bytesRead === 0) {
@@ -177,7 +183,7 @@ export default class IPQSRecord {
 
       if (c === undefined) {
         throw new Error(
-          "Invalid or nonexistent IP address specified for lookup. (EID: 12)"
+          "Invalid or nonexistent IP address specified for lookup. (EID: 12)",
         );
       }
 
@@ -215,7 +221,10 @@ export default class IPQSRecord {
           break;
         default:
           if (c.type.has(Binary.StringData)) {
-            const pos = raw.readUInt32LE(current_byte);
+            const pos =
+              this.file.version === 0x01
+                ? raw.readUInt32LE(current_byte)
+                : Number(raw.readBigUint64LE(current_byte));
 
             if (!this.file.fileHandler) {
               throw new Error("Invalid or nonexistent file pointer. EID 13");
@@ -233,7 +242,9 @@ export default class IPQSRecord {
               const size = sb.readUInt8(0);
 
               if (size === 0) {
-                throw new Error("Invalid or nonexistent file pointer. EID 14");
+                value = "";
+                current_byte += this.file.version === 0x01 ? 4 : 8;
+                break;
               }
 
               const vb = Buffer.alloc(size);
@@ -245,7 +256,7 @@ export default class IPQSRecord {
               }
 
               value = vb.toString();
-              current_byte += 4;
+              current_byte += this.file.version === 0x01 ? 4 : 8;
             } catch (err: any) {
               throw new Error(`File read error: ${err.message}`);
             }
