@@ -20,6 +20,11 @@ export default class IPQSRecord {
   public activeVPN: boolean = false;
   public activeTOR: boolean = false;
   public publicAccessPoint: boolean = false;
+  public frequentAbuser: boolean = false;
+  public trustedApplication: boolean = false;
+  public sharedIP: boolean = false;
+  public securityScanner: boolean = false;
+  public dynamicIP: boolean = false;
 
   public connectionType: ConnectionType | null = null;
   public abuseVelocity: AbuseVelocity | null = null;
@@ -164,6 +169,8 @@ export default class IPQSRecord {
       this.processSecondByte(new Binary.Bitmask(raw[1]));
 
       let third = new Binary.Bitmask(raw[2]);
+      this.processThirdByte(third);
+
       this.connectionType = new ConnectionType(third);
       this.abuseVelocity = new AbuseVelocity(third);
 
@@ -355,6 +362,28 @@ export default class IPQSRecord {
 
     if (b.has(Binary.PublicAccessPoint)) {
       this.publicAccessPoint = true;
+    }
+
+    if (b.has(Binary.FrequentAbuser)) {
+      this.frequentAbuser = true;
+    }
+
+    if (b.has(Binary.TrustedApplication)) {
+      this.trustedApplication = true;
+    }
+  }
+
+  private processThirdByte(b: Binary.Bitmask) {
+    if (b.has(Binary.SharedIP)) {
+      this.sharedIP = true;
+    }
+
+    if (b.has(Binary.SecurityScanner)) {
+      this.securityScanner = true;
+    }
+
+    if (b.has(Binary.DynamicIP)) {
+      this.dynamicIP = true;
     }
   }
 

@@ -25,12 +25,12 @@ export const IsHostingProvider = 4;
 export const ActiveVPN = 8;
 export const ActiveTOR = 16;
 export const PublicAccessPoint = 32;
-export const ReservedOne = 64;
-export const ReservedTwo = 128;
+export const FrequentAbuser = 64;
+export const TrustedApplication = 128;
 
-export const ReservedThree = 1;
-export const ReservedFour = 2;
-export const ReservedFive = 4;
+export const SharedIP = 1;
+export const SecurityScanner = 2;
+export const DynamicIP = 4;
 export const ConnectionTypeOne = 8;
 export const ConnectionTypeTwo = 16;
 export const ConnectionTypeThree = 32;
