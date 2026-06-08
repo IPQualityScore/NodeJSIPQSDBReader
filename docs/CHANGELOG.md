@@ -12,3 +12,5 @@ All notable changes to this project will be documented in this file.
 - [Added] [2026-06-08] Added IPQS database file `IPQualityScore-IP-Reputation-Database-IPv4.ipqs` to `.gitignore`
 - [Fixed] [2026-06-08] Updated README import example to use npm package name `node_js_ipqs_db_reader` instead of relative path
 - [Chore] [2026-06-08] Added `test.js` to `.gitignore`
+- [Added] [2026-06-08] Added `example.js` to `.gitignore`
+- [Changed] [2026-06-08] Updated Jest ecosystem dependencies from v27 to v29 (`jest`, `ts-jest`, `@types/jest`)
