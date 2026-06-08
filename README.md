@@ -31,7 +31,7 @@ console.log(record.country);
 #### Detailed Example
 
 ```javascript
-const { DBReader } = require("./lib/index");
+const { DBReader } = require("node_js_ipqs_db_reader");
 const dbFile = `${__dirname}/IPQualityScore-IP-Reputation-Database-IPv4.ipqs`;
 
 async function main(ip) {
